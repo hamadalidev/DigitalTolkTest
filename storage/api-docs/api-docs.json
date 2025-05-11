@@ -1,0 +1,965 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Translation Management API",
+        "description": "API for managing translations with device-specific content for multi-language support",
+        "contact": {
+            "name": "API Support",
+            "url": "https://www.example.com/support",
+            "email": "admin@example.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://my-default-host.com",
+            "description": "API Server"
+        }
+    ],
+    "paths": {
+        "/api/translations": {
+            "get": {
+                "tags": [
+                    "Translations"
+                ],
+                "summary": "List all translations",
+                "description": "Get a paginated list of translations with optional filtering",
+                "operationId": "listTranslations",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "query",
+                        "description": "Filter by translation key (partial match)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "value",
+                        "in": "query",
+                        "description": "Filter by translation value (partial match)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "locale_id",
+                        "in": "query",
+                        "description": "Filter by locale ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "device_type",
+                        "in": "query",
+                        "description": "Filter by device type",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "mobile",
+                                "tablet",
+                                "desktop"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "group",
+                        "in": "query",
+                        "description": "Filter by translation group",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of translations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Translations"
+                ],
+                "summary": "Create a new translation",
+                "description": "Add a new translation to the system",
+                "operationId": "createTranslation",
+                "requestBody": {
+                    "description": "Translation data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TranslationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Translation created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Translation"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "key": [
+                                                    "The key field is required."
+                                                ],
+                                                "locale_id": [
+                                                    "The locale id field is required."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Duplicate translation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A translation with this key already exists for the specified locale, device type, and group."
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "duplicate_translation"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/translations/{id}": {
+            "get": {
+                "tags": [
+                    "Translations"
+                ],
+                "summary": "Get a specific translation",
+                "description": "Retrieve details for a single translation by its ID",
+                "operationId": "getTranslation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Translation ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Translation details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Translation"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Translation not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Translation not found"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "not_found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Translations"
+                ],
+                "summary": "Update a translation",
+                "description": "Update an existing translation",
+                "operationId": "updateTranslation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Translation ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Translation data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TranslationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Translation updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Translation"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "key": [
+                                                    "The key field is required."
+                                                ],
+                                                "locale_id": [
+                                                    "The locale id field is required."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Translation not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Translation not found"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "not_found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Duplicate translation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A translation with this key already exists for the specified locale, device type, and group."
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "duplicate_translation"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Translations"
+                ],
+                "summary": "Delete a translation",
+                "description": "Remove a translation from the system",
+                "operationId": "deleteTranslation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Translation ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Translation deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Translation deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Translation not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Translation not found"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "not_found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/translations/locale/{locale}": {
+            "get": {
+                "tags": [
+                    "Translations"
+                ],
+                "summary": "Get translations by locale",
+                "description": "Retrieve all translations for a specific locale code with optional device type filtering",
+                "operationId": "getTranslationsByLocale",
+                "parameters": [
+                    {
+                        "name": "locale",
+                        "in": "path",
+                        "description": "Locale code (e.g., en, es, fr)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "device_type",
+                        "in": "query",
+                        "description": "Device type filter",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "mobile",
+                                "tablet",
+                                "desktop"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Translations for the specified locale",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "string",
+                                        "example": "Welcome message"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/translations/json/{locale}": {
+            "get": {
+                "tags": [
+                    "Translations"
+                ],
+                "summary": "Get translations in JSON format",
+                "description": "Get translations grouped by their translation group for a specific locale and device type, optimized for frontend frameworks",
+                "operationId": "getJsonTranslations",
+                "parameters": [
+                    {
+                        "name": "locale",
+                        "in": "path",
+                        "description": "Locale code (e.g., en, es, fr)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "device_type",
+                        "in": "query",
+                        "description": "Device type (desktop, mobile, tablet)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "desktop",
+                            "enum": [
+                                "desktop",
+                                "mobile",
+                                "tablet"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved translations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "translations": {
+                                            "description": "Translations grouped by their group",
+                                            "type": "object",
+                                            "example": {
+                                                "general": {
+                                                    "general.welcome": "Welcome to our application",
+                                                    "general.goodbye": "Thank you for using our application"
+                                                },
+                                                "auth": {
+                                                    "auth.login": "Login",
+                                                    "auth.logout": "Logout"
+                                                }
+                                            },
+                                            "additionalProperties": {
+                                                "description": "Group of translations",
+                                                "type": "object",
+                                                "additionalProperties": {
+                                                    "description": "Translation value",
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "locale": {
+                                            "description": "The locale code requested",
+                                            "type": "string",
+                                            "example": "en"
+                                        },
+                                        "device_type": {
+                                            "description": "The device type requested",
+                                            "type": "string",
+                                            "example": "desktop"
+                                        },
+                                        "meta": {
+                                            "description": "Metadata about the translations",
+                                            "properties": {
+                                                "generated_at": {
+                                                    "description": "When these translations were generated",
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2023-01-01T12:00:00Z"
+                                                },
+                                                "version": {
+                                                    "description": "Version of the translation format",
+                                                    "type": "string",
+                                                    "example": "1.0"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Locale not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Locale not found"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "not_found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Translation": {
+                "title": "Translation Model",
+                "description": "Translation resource representation",
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "locale_id": {
+                        "description": "Locale identifier",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "key": {
+                        "description": "Translation key used for lookups",
+                        "type": "string",
+                        "example": "welcome.message"
+                    },
+                    "value": {
+                        "description": "Translated text",
+                        "type": "string",
+                        "example": "Welcome to our application!"
+                    },
+                    "device_type": {
+                        "description": "Device type this translation applies to",
+                        "type": "string",
+                        "enum": [
+                            "mobile",
+                            "tablet",
+                            "desktop"
+                        ],
+                        "example": "mobile"
+                    },
+                    "group": {
+                        "description": "Translation group for organization",
+                        "type": "string",
+                        "example": "general"
+                    },
+                    "is_active": {
+                        "description": "Whether this translation is active",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "TranslationRequest": {
+                "title": "Translation Request",
+                "description": "Data required to create or update a translation",
+                "required": [
+                    "locale_id",
+                    "key",
+                    "value",
+                    "device_type"
+                ],
+                "properties": {
+                    "locale_id": {
+                        "description": "Locale identifier",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "key": {
+                        "description": "Translation key used for lookups",
+                        "type": "string",
+                        "example": "welcome.message"
+                    },
+                    "value": {
+                        "description": "Translated text",
+                        "type": "string",
+                        "example": "Welcome to our application!"
+                    },
+                    "device_type": {
+                        "description": "Device type this translation applies to",
+                        "type": "string",
+                        "enum": [
+                            "mobile",
+                            "tablet",
+                            "desktop"
+                        ],
+                        "example": "mobile"
+                    },
+                    "group": {
+                        "description": "Translation group for organization",
+                        "type": "string",
+                        "example": "general"
+                    },
+                    "is_active": {
+                        "description": "Whether this translation is active",
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "type": "object"
+            },
+            "ErrorResponse": {
+                "title": "Error Response",
+                "description": "Standard error response format",
+                "properties": {
+                    "message": {
+                        "description": "Error message",
+                        "type": "string"
+                    },
+                    "error": {
+                        "description": "Error code",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "PaginatedResponse": {
+                "title": "Paginated Response",
+                "description": "Standard paginated response format",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Translation"
+                        }
+                    },
+                    "links": {
+                        "properties": {
+                            "first": {
+                                "type": "string",
+                                "example": "http://localhost/api/translations?page=1"
+                            },
+                            "last": {
+                                "type": "string",
+                                "example": "http://localhost/api/translations?page=5"
+                            },
+                            "prev": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "next": {
+                                "type": "string",
+                                "example": "http://localhost/api/translations?page=2"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "meta": {
+                        "properties": {
+                            "current_page": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "from": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "last_page": {
+                                "type": "integer",
+                                "example": 5
+                            },
+                            "path": {
+                                "type": "string",
+                                "example": "http://localhost/api/translations"
+                            },
+                            "per_page": {
+                                "type": "integer",
+                                "example": 15
+                            },
+                            "to": {
+                                "type": "integer",
+                                "example": 15
+                            },
+                            "total": {
+                                "type": "integer",
+                                "example": 75
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "JWT token authentication",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Translations",
+            "description": "API endpoints for managing translations"
+        }
+    ]
+}
